@@ -1,85 +1,79 @@
-import './App.css'
-import { Routes, Route} from 'react-router-dom'
-import { Box, Flex,Theme, IconButton, Avatar, Text, Separator } from '@radix-ui/themes'
-import { useState } from 'react'
-import { SunIcon, MoonIcon } from '@radix-ui/react-icons'
-import Sidebar from './components/Sidebar' 
-import Courses from './pages/Courses'
-import Dashboard from './pages/Dashboard'
-import Assignments from './pages/Assignments'
-import Settings from './pages/Settings'
-import ClassDetail from './pages/ClassDetail'
+import "./App.css";
+import { Routes, Route } from "react-router-dom";
+import { Box, Theme } from "@radix-ui/themes";
+import { useState } from "react";
+import Courses from "./pages/Courses";
+import Dashboard from "./pages/Dashboard";
+import Assignments from "./pages/Assignments";
+import Login from "./pages/Login";
+import PrivateRoute from "./routes/PrivateRoute";
+import UserProfile from "./components/UserProfile";
+import { useAuth } from "./hooks/useAuth";
+import Sidebar from "./components/Sidebar";
+import CourseDetail from "./pages/CourseDetail";
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  const [name, setName] = useState('John Smith');
-  const [avatarUrl, setAvatarUrl] = useState('https://i.pravatar.cc/150?img=68');
+  const auth = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   return (
-    <Theme appearance={isDarkMode ? 'dark' : 'light'}>
-      <Flex> 
-        <Sidebar /> 
-        
-        <Flex direction="column" style={{ flexGrow: 1, height: '100vh' }}>
-          
-          <Box 
-            style={{ 
-              flexShrink: 0,
-              borderBottom: '1px solid var(--gray-4)', 
-            }}
-            p="3"
-          >
- 
-            <Flex justify="end" align="center" gap="3">
-              <Avatar
-                src={avatarUrl}
-                fallback={name.charAt(0) || 'A'}
-                size="2"
-                radius="full"
+    <Theme appearance={isDarkMode ? "dark" : "light"} className="h-screen">
+      <div className="flex h-full w-full">
+        {/* LEFT SIDEBAR */}
+        {auth?.isAuthenticated && (
+          <div className="w-64 h-full border-r border-[var(--gray-6)]">
+            <Sidebar />
+          </div>
+        )}
+
+        {/* MAIN AREA */}
+        <div className="flex flex-col flex-1 h-full overflow-hidden">
+          {/* TOP BAR */}
+          {auth?.isAuthenticated && (
+            <div className="w-full border-b border-[var(--gray-6)] px-4 py-3 flex justify-end">
+              <UserProfile
+                isDarkMode={isDarkMode}
+                onIsDarkModeChange={setIsDarkMode}
               />
-              <Text size="2">{name}</Text>
-              <Separator orientation="vertical" size="2" />
+            </div>
+          )}
 
-
-              <IconButton 
-                variant="ghost" 
-                onClick={() => setIsDarkMode(!isDarkMode)}
-              >
-                {isDarkMode 
-                  ? <SunIcon width="18" height="18" /> 
-                  : <MoonIcon width="18" height="18" />
-                }
-              </IconButton>
-            </Flex>
-          </Box>
-
-          <Box style={{ flexGrow: 1, overflow: 'auto' }}>
+          {/* CONTENT */}
+          <Box style={{ flexGrow: 1, overflow: "auto" }}>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/courses" element={<Courses />} />
-              <Route path="/assignments" element={<Assignments />} />
- 
-              <Route 
-                path="/settings" 
+              <Route
+                path="/"
                 element={
-                  <Settings 
-                    name={name} 
-                    avatarUrl={avatarUrl}
-                    setName={setName}
-                    setAvatarUrl={setAvatarUrl}
-                  />
-                } 
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
               />
-              
-              <Route path="/course/:id" element={<ClassDetail />} />
+              <Route
+                path="/courses"
+                element={
+                  <PrivateRoute>
+                    <Courses />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/assignments"
+                element={
+                  <PrivateRoute>
+                    <Assignments />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="/login" element={<Login />} />
+
+              <Route path="/course/:id" element={<CourseDetail />} />
             </Routes>
           </Box>
-
-        </Flex>
-      </Flex>
+        </div>
+      </div>
     </Theme>
-  )
+  );
 }
 
-export default App
+export default App;
