@@ -1,128 +1,176 @@
-import { Box,  Heading, Text, Card, Flex, Grid, Progress, Separator } from '@radix-ui/themes';
-import { CheckCircledIcon, CircleIcon } from '@radix-ui/react-icons';
+import { Box, Heading, Text, Card, Flex, Grid } from "@radix-ui/themes";
+import { useEffect, useState } from "react";
+import { useClassroom } from "../hooks/useClassroom/useClassroom";
+import type { ClassroomCourse } from "../hooks/useClassroom/types/ClassroomCourse";
+import { useNavigate } from "react-router-dom";
 
-function LegendDot({ color }: { color: string }) {
-  return (
-    <Box style={{
-      width: 12,
-      height: 12,
-      backgroundColor: `var(--${color}-9)`, 
-      borderRadius: '3px',
-      flexShrink: 0
-    }} />
-  );
-}
-
-
+const Skeleton = ({ className }: { className: string }) => (
+  <div className={`animate-pulse bg-[var(--gray-4)] rounded ${className}`} />
+);
 
 function Dashboard() {
+  const { fetchCourses, fetchTotalAssignments } = useClassroom();
+  const navigate = useNavigate();
+  const [refreshFlag, setRefreshFlag] = useState(0);
+  const [courses, setCourses] = useState<ClassroomCourse[]>([]);
+  const [assignmentCount, setAssignmentCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [lastSync, setLastSync] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+
+      const list = await fetchCourses();
+      setCourses(list);
+
+      const total = await fetchTotalAssignments();
+      setAssignmentCount(total);
+
+      setLastSync(new Date().toLocaleTimeString());
+
+      setLoading(false);
+    };
+
+    load();
+  }, [refreshFlag]);
+
+  const courseColor = (id: string) => {
+    const colors = [
+      "indigo",
+      "blue",
+      "cyan",
+      "teal",
+      "green",
+      "violet",
+      "purple",
+      "orange",
+    ];
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = (hash + (id.codePointAt(i) || 0) * (i + 1)) % colors.length;
+    }
+
+    return colors[hash];
+  };
+
   return (
-    <Box px="6" py="6">
-      <Heading size="8" mb="4">
-        Dashboard
-      </Heading>
-       <Grid columns="2" gap="4">
+    <Box px="6" py="6" className="max-w-6xl mx-auto  rounded-xl shadow-sm">
+      <Flex justify="between" align="center" mb="4">
+        <Flex direction="column">
+          <Heading size="8">Dashboard</Heading>
+          <Text size="2" color="gray" className="mt-1">
+            Overview of your learning activity
+          </Text>
+          <Text size="1" color="gray">
+            Last synced: {lastSync}
+          </Text>
+        </Flex>
+        <button
+          onClick={() => setRefreshFlag((prev) => prev + 1)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+        >
+          Refresh
+        </button>
+      </Flex>
 
-        <Card>
-          <Heading size="5" mb="4">Upcoming Assignments</Heading>
+      <Card className="p-4 border border-gray-200 rounded-xl shadow-sm mb-4">
+        <Heading size="5" mb="3">
+          Your Courses
+        </Heading>
+        {loading && (
+          <Flex wrap="wrap" gap="2">
+            <Skeleton className="w-32 h-6" />
+            <Skeleton className="w-28 h-6" />
+            <Skeleton className="w-40 h-6" />
+            <Skeleton className="w-24 h-6" />
+          </Flex>
+        )}
+        <Flex wrap="wrap" gap="2">
+          {courses.map((course) => {
+            const color = courseColor(course.id);
+            return (
+              <Box
+                key={course.id}
+                className="
+                  px-3 py-1 
+                  flex items-center gap-2
+                  bg-[var(--gray-2)] 
+                  border border-[var(--gray-6)] 
+                  rounded-lg 
+                  text-sm 
+                  cursor-pointer 
+                  transition 
+                  hover:bg-[var(--gray-3)]
+                "
+                onClick={() => navigate(`/course/${course.id}`)}
+                style={{ borderLeft: `4px solid var(--${color}-9)` }}
+              >
+                <span
+                  className="inline-block w-2 h-2 rounded-full mr-2"
+                  style={{ backgroundColor: `var(--${color}-9)` }}
+                />
+                {course.name}
+              </Box>
+            );
+          })}
+          {courses.length === 0 && !loading && (
+            <Text size="2" color="gray">
+              No courses available.
+            </Text>
+          )}
+        </Flex>
+      </Card>
+
+      <Grid columns="2" gap="4">
+        <Card className="p-4 border border-gray-200 rounded-xl shadow-sm">
+          <Heading size="5" mb="4">
+            Upcoming Assignments
+          </Heading>
           <Flex direction="column" gap="4">
+            {loading && (
+              <>
+                <Skeleton className="w-full h-4 mb-2" />
+                <Skeleton className="w-2/3 h-4 mb-4" />
+              </>
+            )}
 
-            <Box>
-              <Flex gap="2" align="center" mb="1">
-                <CheckCircledIcon color="var(--green-9)" />
-                <Text size="2" weight="bold">100%</Text>
-                <Text size="1" color="gray">Completed</Text>
-                <Separator orientation="vertical" size="1" />
-                <Text size="2">Data Structures - Due Fri</Text>
-              </Flex>
-              <Progress value={100} color="green" />
-            </Box>
-
-            <Box>
-              <Flex gap="2" align="center" mb="1">
-                <CircleIcon color="var(--blue-9)" />
-                <Text size="2" weight="bold">75%</Text>
-                <Text size="1" color="gray">Pending</Text>
-                <Separator orientation="vertical" size="1" />
-                <Text size="2">Computer Science - Due Mon</Text>
-              </Flex>
-              <Progress value={75} color="blue" />
-            </Box>
+            <Text color="gray" size="2">
+              No upcoming assignments.
+            </Text>
           </Flex>
         </Card>
 
-        <Card>
-          <Heading size="5" mb="4">Quick Stats</Heading>
+        <Card className="p-4  border border-gray-200 rounded-xl shadow-sm">
+          <Heading size="5" mb="4">
+            Quick Stats
+          </Heading>
           <Flex direction="column" gap="2">
-            <Text size="3">4 Course</Text>
-            <Text size="3">5 <Text color="red">Overdue</Text></Text>
-            <Text size="3">12 Total Assignments</Text>
-            <Text size="3">5 Pending Submissions</Text>
+            <Text size="3">{courses.length} Courses</Text>
+            <Text size="3">{assignmentCount} Total Assignments</Text>
+            <Text size="3" color="gray">
+              Assignment details limited by API
+            </Text>
           </Flex>
         </Card>
-
-        <Card>
-          <Flex gap="4" align="center">
-            <Box style={{
-              width: '100px',
-              height: '100px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--gray-3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Flex direction="column" align="center">
-                <Text size="1" color="gray">Status</Text>
-                <Text weight="bold">1 of 4</Text>
-              </Flex>
-            </Box>
-
-            <Flex direction="column" gap="2">
-              <Flex align="center" gap="2">
-                <LegendDot color="green" />
-                <Text size="2">Completed</Text>
-              </Flex>
-              <Flex align="center" gap="2">
-                <LegendDot color="blue" />
-                <Text size="2">Pending</Text>
-              </Flex>
-              <Flex align="center" gap="2">
-                <LegendDot color="red" />
-                <Text size="2">Overdue</Text>
-              </Flex>
-            </Flex>
-          </Flex>
-        </Card>
-
-        <Card>
-          <Heading size="5" mb="4">Course Progress</Heading>
-          <Flex direction="column" gap="3">
-            <Flex align="center" gap="2">
-              <LegendDot color="purple" />
-              <Text size="3">4 Course</Text>
-            </Flex>
-            <Flex align="center" gap="2">
-              <LegendDot color="yellow" />
-              <Text size="3">12 Assignments</Text>
-            </Flex>
-            <Flex align="center" gap="2">
-              <LegendDot color="red" />
-              <Text size="3">Overdue</Text>
-            </Flex>
-          </Flex>
-        </Card>
-
       </Grid>
 
-      <Card mt="4"> 
-        <Heading size="5" mb="4">Recent Activity</Heading>
-        <Box style={{ minHeight: '100px' }}>
+      <Card mt="4" className="p-4 border border-gray-200 rounded-xl shadow-sm">
+        <Heading size="5" mb="4">
+          Recent Activity
+        </Heading>
+        <Box style={{ minHeight: "100px" }}>
+          {loading && (
+            <>
+              <Skeleton className="w-full h-4 mb-2" />
+              <Skeleton className="w-2/3 h-4 mb-2" />
+              <Skeleton className="w-1/2 h-4 mb-2" />
+            </>
+          )}
+
           <Text color="gray">No recent activity.</Text>
         </Box>
       </Card>
-
     </Box>
   );
 }

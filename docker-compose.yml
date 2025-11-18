@@ -1,0 +1,13 @@
+name: 'CE306-project'
+
+services:
+  sonarqube:
+    image: sonarqube:latest
+    container_name: CE306sonarqube
+    ports:
+      - '9000:9000'
+    restart: unless-stopped
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+      - SONARQUBE_JAVA_OPTS=-Xms256m -Xmx256m
+      - SONAR_SEARCH_JAVAOPTS=-Xms256m -Xmx256m

@@ -1,83 +1,71 @@
-import { Box, Heading, Grid, Card, Flex, Text, Progress } from '@radix-ui/themes';
-import { Link } from 'react-router-dom';
-
-const mockCourses = [
-  { 
-    id: 'calculus-i',
-    title: 'Calculus I', 
-    teacher: 'Ms. Davis', 
-    progress: 75 
-  },
-  { 
-    id: 'physics-ii-lab',
-    title: 'Physics II Lab', 
-    teacher: 'Ms. Davis', 
-    progress: 50 
-  },
-  { 
-    id: 'world-history',
-    title: 'World History', 
-    teacher: 'Dr. Chen', 
-    progress: 8 
-  },
-  { 
-    id: 'computer-science',
-    title: 'Computer Science', 
-    teacher: 'Prof. Lee', 
-    progress: 60 
-  },
-  { 
-    id: 'english-lit',
-    title: 'English Literature', 
-    teacher: 'Mr. Brown', 
-    progress: 30 
-  },
-  { 
-    id: 'data-structures',
-    title: 'Data Structures', 
-    teacher: 'Dr. Smith', 
-    progress: 100 
-  },
-];
-
-
-function CourseCard({ id, title, teacher, progress }: {id: string, title: string, teacher: string, progress: number }) {
-  return (
-    <Link to={`/course/${id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-      <Card>
-        <Flex direction="column" gap="3">
-          <Heading size="4" trim="start">{title}</Heading>
-          <Text size="2" color="gray">Teacher: {teacher}</Text>
-          
-          <Box>
-            <Progress value={progress} color="blue" size="2" />
-            <Text size="1" color="gray" mt="1">{progress}% Complete</Text>
-          </Box>
-        </Flex>
-      </Card>
-    </Link>
-  );
-}
+import { Box, Heading, Grid } from "@radix-ui/themes";
+import { useState, useEffect } from "react";
+import type { ClassroomCourse } from "../hooks/useClassroom/types/ClassroomCourse";
+import { useClassroom } from "../hooks/useClassroom/useClassroom";
+import type { CourseTeacher } from "../hooks/useClassroom/types/CourseTeacher";
+import CourseCard from "../components/CourseCard";
 
 function Courses() {
+  const { fetchCourses, fetchCourseTeachers, computeCourseProgress } =
+    useClassroom();
+  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<
+    (ClassroomCourse & { teacherNames: CourseTeacher[]; progress: number })[]
+  >([]);
+
+  useEffect(() => {
+    fetchCourses().then(async (list) => {
+      const enriched = await Promise.all(
+        list.map(async (course) => {
+          const teacherNames = await fetchCourseTeachers(course.id);
+          const progress = await computeCourseProgress(course.id);
+
+          return {
+            ...course,
+            teacherNames,
+            progress,
+          };
+        }),
+      );
+
+      setCourses(enriched);
+      setLoading(false);
+    });
+  }, []);
   return (
     <Box px="6" py="6">
       <Heading size="8" mb="4">
         Courses
       </Heading>
-      
-      <Grid columns="3" gap="4">
-       
-        {mockCourses.map((course) => (
-          <CourseCard
-            key={course.id} 
-            id={course.id}  
-            title={course.title}
-            teacher={course.teacher}
-            progress={course.progress}
-          />
-        ))}
-      </Grid>
+            {loading ? (
+        <Grid columns="3" gap="4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i + 1}
+              className="rounded-lg border border-[var(--gray-6)] bg-[var(--gray-2)] p-4 animate-pulse"
+            >
+              <div className="h-5 w-3/4 bg-[var(--gray-6)] rounded mb-3"></div>
+              <div className="h-4 w-1/2 bg-[var(--gray-6)] rounded mb-4"></div>
+              <div className="w-full h-2 bg-[var(--gray-6)] rounded mb-1"></div>
+              <div className="h-3 w-20 bg-[var(--gray-6)] rounded"></div>
+            </div>
+          ))}
+        </Grid>
+      ) : (
+        <Grid columns="3" gap="4">
+          {courses.map((course) => (
+            <CourseCard
+              key={course.id}
+              id={course.id}
+              title={course.name}
+              teacher={course.teacherNames
+                .map((teacher) => teacher.profile.name.fullName)
+                .join(", ")}
+              progress={course.progress}
+            />
+          ))}
+        </Grid>
+      )}
     </Box>
   );
 }
