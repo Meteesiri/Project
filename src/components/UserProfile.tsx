@@ -3,6 +3,8 @@ import { Box, Avatar, Separator, IconButton, Text } from "@radix-ui/themes";
 import { useGoogle } from "../hooks/useGoogle/useGoogle";
 import { useEffect, useState } from "react";
 import type { GoogleUserProfile } from "../hooks/useGoogle/useGoogle.types";
+import { useAuth } from "../hooks/useAuth";
+import { IoLogOutOutline } from "react-icons/io5";
 
 type UserProfileProps = {
   isDarkMode: boolean;
@@ -15,6 +17,7 @@ export default function UserProfile({
 }: Readonly<UserProfileProps>): Readonly<React.ReactNode> {
   const [user, setUser] = useState<GoogleUserProfile | null>(null);
   const { fetchUserProfile } = useGoogle();
+  const auth = useAuth();
 
   useEffect(() => {
     fetchUserProfile().then((profile) => {
@@ -37,6 +40,9 @@ export default function UserProfile({
           radius="full"
         />
         <Text>{user?.name}</Text>
+        <IconButton variant="ghost" onClick={() => auth?.logout()}>
+          <IoLogOutOutline width="18" height="18"/>
+        </IconButton>
         <Separator orientation="vertical" size="2" />
 
         <IconButton

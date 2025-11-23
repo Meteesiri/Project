@@ -1,6 +1,7 @@
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "../assets/dpu-logo.png";
 import { useNavigate } from "react-router";
+import { useEffect } from "react";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/classroom.courses.readonly",
@@ -32,6 +33,14 @@ export default function Login() {
         });
     },
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem("googleToken");
+
+    if (token) {
+      navigate("/");
+    }
+  }, []);
 
   return (
     <div className="flex h-screen w-screen justify-center items-center bg-gradient-to-r from-violet-300 to-indigo-500">
