@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { AuthContext } from "../contexts/authContext";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthProvider({
   children,
@@ -7,6 +8,7 @@ export default function AuthProvider({
   const [token, setToken] = useState(
     localStorage.getItem("googleToken") || null,
   );
+  const navigate = useNavigate();
 
   const login = (newToken: string) => {
     localStorage.setItem("googleToken", newToken);
@@ -16,6 +18,7 @@ export default function AuthProvider({
   const logout = () => {
     localStorage.removeItem("googleToken");
     setToken(null);
+    navigate("/login");
   };
 
   const value = useMemo(

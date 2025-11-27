@@ -116,11 +116,8 @@ export const useClassroom = () => {
 
     for (const course of courses) {
       const works = await fetchCourseWork(course.id);
-      console.log(works);
       total += works.length;
     }
-
-    console.log("Total assignments fetched:", total);
 
     return total;
   };
